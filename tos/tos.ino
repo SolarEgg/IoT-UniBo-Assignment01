@@ -18,8 +18,11 @@ void loop(){
   case DEEP_SLEEP_STATE:
     deep_sleep();
     break;
-  case STAGE1_STATE:
-    stage1();
+  case SETTING_DIFFICULTY:
+    set_difficulty();
+    break;
+  case GAME_STATE:
+    game_state();
     break;
   case STAGE2_STATE:
     stage2();

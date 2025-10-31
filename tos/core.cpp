@@ -3,9 +3,12 @@
 #include "kernel.h"
 #include "input.h"
 #include "config.h"
+#include "LiquidCrystal_I2C.h"
 
 #define MAX_TIME_IN_INTRO_STATE 10000
 #define MAX_TIME_IN_STAGE2_STATE 10000
+
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,20,4); 
 
 //Setup
 void initCore(){
@@ -20,15 +23,19 @@ void initCore(){
   //Led rosso :
   pinMode(LEDS_PIN, OUTPUT);
 
-
-  //Va inizializzato il display LCD
+  //Display LCD :
+  lcd.init();
+  lcd.backlight();
 }
 
 //Gestisce lo stato iniziale
 void intro(){
   
   if (isJustEnteredInState()){
-    Serial.println("Welcome to TOS! Press B1 to Start");
+    lcd.setCursor(0,0); // Set the cursor on the third column and first row.
+    lcd.print("Welcome to TOS!");
+    lcd.setCursor(0,1);
+    lcd.print("Press B1 to start");
   }
 
   //Fading del led LS ---------------------------
@@ -41,9 +48,48 @@ void intro(){
     fadeAmount = -fadeAmount ; 
   }     
 
-  //Scelta difficoltà --------------------
+  delay(15);
+
+  int dt = getCurrentTimeInState();
+  if (dt > MAX_TIME_IN_INTRO_STATE) //Se passano 10 secondi, vado in DEEP_SLEEP
+    changeState(DEEP_SLEEP_STATE);
+
+  else if(isButtonPressed(0)){ //Se ho premuto il pulsante 1, vado in GAME_STATE
+    lcd.clear();
+    changeState(SETTING_DIFFICULTY);
+  }
+
+}
+
+void deep_sleep(){
+  if (isJustEnteredInState()){
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
+    lcd.println("Going in sleep mode");    
+  }
+  //Spengo il led rosso
+  analogWrite(LEDS_PIN, 0);
+
+  /* change the state if button 0 is pressed */
+  if (isButtonPressed(0)){
+    digitalWrite(LED01_PIN, HIGH);
+    delay(100);
+    digitalWrite(LED01_PIN, LOW);
+    changeState(INTRO_STATE);          
+  }
+}
+
+void set_difficulty(){
+
   int analogValue = analogRead(POT_PIN);
-  static int level;
+  static int level = 1;
+
+  if (isJustEnteredInState()){
+    lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
+    lcd.println("Difficulty level : " + level);    
+  }
+
+   //Scelta difficoltà --------------------
   if(analogValue <= 255)
     level = 1;
   else if(analogValue <= 511)
@@ -54,31 +100,22 @@ void intro(){
     level = 4;
   }
 
-  int dt = getCurrentTimeInState();
-  if (dt > MAX_TIME_IN_INTRO_STATE) //Se passano 10 secondi, vado in DEEP_SLEEP
-    changeState(DEEP_SLEEP_STATE);
-
-  else if(isButtonPressed(0)) //Se ho premuto il pulsante 1, vado in GAME_STATE
-    Serial.println("stato 1 - DIFFICOLTA' SCELTA :" + level);
-    //changeState(GAME_STATE);
-
-}
-
-void deep_sleep(){
-  if (isJustEnteredInState()){
-    Serial.println("Going into deep sleep mode..");
-  }
-
   /* change the state if button 0 is pressed */
   if (isButtonPressed(0)){
-    changeState(INTRO_STATE);          
+    digitalWrite(LED01_PIN, HIGH);
+    delay(100);
+    digitalWrite(LED01_PIN, LOW);
+    changeState(GAME_STATE);          
   }
+  
 }
 
 
 void game_state(){
   if (isJustEnteredInState()){
-    Serial.println("Stage1..");
+    lcd.clear();
+    lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
+    lcd.println("Gioco Iniziato");      
     resetInput();
   }
 

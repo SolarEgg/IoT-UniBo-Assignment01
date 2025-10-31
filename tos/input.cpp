@@ -20,7 +20,7 @@ void buttonHandler1(){ buttonHandler(1); }
 void buttonHandler2(){ buttonHandler(2); }
 void buttonHandler3(){ buttonHandler(3); }
 
-void (*buttonHandlers[NUM_BUTTONS])() = { buttonHandler0, buttonHandler1 };
+void (*buttonHandlers[NUM_BUTTONS])() = { buttonHandler0, buttonHandler1, buttonHandler2, buttonHandler3 };
 
 void buttonHandler(int i){
   long ts = millis();
