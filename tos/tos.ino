@@ -24,9 +24,6 @@ void loop(){
   case GAME_STATE:
     game_state();
     break;
-  case STAGE2_STATE:
-    stage2();
-    break;
   case FINAL_STATE:
     finalize();
     break;

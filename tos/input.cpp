@@ -33,10 +33,11 @@ void buttonHandler(int i){
   }
 }
 
+// Setup pin pulsanti
 void initInput(){
   for (int i = 0; i < NUM_BUTTONS; i++) {
-    pinMode(inputPins[i], INPUT);  
-    enableInterrupt(inputPins[i], buttonHandlers[i], CHANGE);       
+    pinMode(inputPins[i], INPUT); //Li imposta in input
+    enableInterrupt(inputPins[i], buttonHandlers[i], CHANGE); //abilita gli interrrupt
   }
 }
 

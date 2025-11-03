@@ -18,5 +18,6 @@ void game_state();
 void stage1();
 void stage2();
 void finalize();
+void generaSequenza();
 
 #endif
