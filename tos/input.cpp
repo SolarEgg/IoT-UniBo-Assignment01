@@ -22,6 +22,7 @@ void buttonHandler3(){ buttonHandler(3); }
 
 void (*buttonHandlers[NUM_BUTTONS])() = { buttonHandler0, buttonHandler1, buttonHandler2, buttonHandler3 };
 
+//Detect the pression and set the flag to true
 void buttonHandler(int i){
   long ts = millis();
   if (ts - lastButtonPressedTimestamps[i] > BOUNCING_TIME){
@@ -33,11 +34,11 @@ void buttonHandler(int i){
   }
 }
 
-// Setup pin pulsanti
+//Button setup
 void initInput(){
   for (int i = 0; i < NUM_BUTTONS; i++) {
-    pinMode(inputPins[i], INPUT); //Li imposta in input
-    enableInterrupt(inputPins[i], buttonHandlers[i], CHANGE); //abilita gli interrrupt
+    pinMode(inputPins[i], INPUT); //setting INPUT mode
+    enableInterrupt(inputPins[i], buttonHandlers[i], CHANGE); //enables interrrupt
   }
 }
 
@@ -51,11 +52,5 @@ void resetInput(){
 bool isButtonPressed(int buttonIndex){
   return buttonPressed[buttonIndex];
 }
-
-bool hasBeenPressed(int index){
-  return buttonPressed[index]; 
-}
-
-
 
 

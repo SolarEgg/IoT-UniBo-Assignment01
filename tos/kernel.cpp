@@ -38,7 +38,7 @@ void changeState(int new_state){
   firstCheckInState = true;
 }
 
-//Calcola il tempo che ha impiegato ad entrare nello stato
+//calculate the time occured while entering the state
 void updateStateTime(){
   currentTimeInState = millis() - enteredStateTime;
 }

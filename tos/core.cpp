@@ -1,3 +1,4 @@
+#include "HardwareSerial.h"
 #include "core.h"
 #include "Arduino.h"
 #include "kernel.h"
@@ -6,11 +7,11 @@
 #include "LiquidCrystal_I2C.h"
 
 #define MAX_TIME_IN_INTRO_STATE 10000
-#define T1 = 10000
+#define T1  10000
 #include <time.h>
 
-double F; //Fattore di scala
-int sequenza[4];
+double F; //Scale factor
+int sequenza[NUM_BUTTONS];
 int i;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4); 
@@ -38,6 +39,8 @@ void initCore(){
 //Gestisce lo stato iniziale
 void intro(){
   
+  int dt = getCurrentTimeInState();
+  
   if (isJustEnteredInState()){
     lcd.setCursor(0,0); // Set the cursor on the third column and first row.
     lcd.print("Welcome to TOS!");
@@ -57,7 +60,6 @@ void intro(){
 
   delay(15);
 
-  int dt = getCurrentTimeInState();
   if (dt > MAX_TIME_IN_INTRO_STATE) //Se passano 10 secondi, vado in DEEP_SLEEP
     changeState(DEEP_SLEEP_STATE);
 
@@ -99,7 +101,7 @@ void set_difficulty(){
   lcd.print("Difficulty : ");
   lcd.print(level);  // stampa il valore del livello come numero
 
-
+  //Forse meglio uno switch
    //Scelta difficoltà --------------------
   if(analogValue <= 255) { 
     level = 1;
@@ -137,24 +139,74 @@ void set_difficulty(){
 }
 
 void game_state(){
+
+  static int myComb[NUM_BUTTONS];
+  static int cont;
+  static int timeAvailable;
+  static bool lost = NULL;
+  int timeElapsed = getCurrentTimeInState();
+  
   if (isJustEnteredInState()){
     lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
     generaSequenza();
     lcd.print("Sequenza : ");    
-    for(i = 0 ; i < 4 ; i++)
+    for(i = 0 ; i < NUM_BUTTONS ; i++)
       lcd.print(sequenza[i]);
-    
+
+    cont = 0; //internal counter of myComb array
+    timeAvailable = T1; //time available to
   }
-  /* change the state if button 0 is pressed */
-  if (isButtonPressed(0)){
-    digitalWrite(LED01_PIN, HIGH);
+  
+  //Se il tempo per indovinare è scaduto, oppure ho sbagliato la sequenza --> GAME OVER
+  if(timeElapsed >= timeAvailable){
+    lcd.clear();
+    lcd.print("TEMPO SCADUTO");
+    delay(1000);
+    lcd.clear();
+  } else if(lost){
+    lcd.print("SEQUENZA SBAGLIATA");
   }
+
+  //Se ho indovinato la sequenza per tempo, incremento lo score e diminuisco il tempo disponibile del un fattore F
+  if(lost != NULL && lost == false){
+    lcd.clear();
+    lcd.print("SEQUENZA CORRETTA");
+  }
+
+
+
+  for(i = 0 ; i < NUM_BUTTONS; i++){
+
+    if(isButtonPressed(i)){
+      Serial.print("Hai premuto il bottone "); //Debug
+      Serial.println(i);
+      digitalWrite(LED01_PIN, HIGH);
+      delay(200);
+      digitalWrite(LED01_PIN, LOW);
+      myComb[cont] = i + 1;
+      cont++;
+      resetInput();
+    }
+
+  }
+
+  if(cont == NUM_BUTTONS){
+
+    for(i = 0 ; i < NUM_BUTTONS ; i++){
+      if(myComb[i] != sequenza[i])
+        lost = true;
+    }
+
+    lost = false;
+
+  }
+
+
 }
 
 void generaSequenza(){
-  for(int j = 0 ; j < 4 ; j++){
-    sequenza[j] = random(1,5); //Genera un numero casuale tra 1 e 4
-    Serial.println(sequenza[j]);
+  for(int j = 0 ; j < 3 ; j++){
+    sequenza[j] = random(1,4); //Genera un numero casuale tra 1 e 4
   }
 }
 
