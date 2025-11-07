@@ -11,7 +11,7 @@
 #include <time.h>
 
 double F; //Scale factor
-int sequence[NUM_BUTTONS];
+int sequenza[NUM_BUTTONS];
 int i;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4); 
@@ -148,10 +148,10 @@ void game_state(){
   
   if (isJustEnteredInState()){
     lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
-    sequenceShuffle();
+    generaSequenza();
     lcd.print("Sequenza : ");    
     for(i = 0 ; i < NUM_BUTTONS ; i++)
-      lcd.print(sequuence[i]);
+      lcd.print(sequenza[i]);
 
     cont = 0; //internal counter of myComb array
     timeAvailable = T1; //time available to
@@ -193,7 +193,7 @@ void game_state(){
   if(cont == NUM_BUTTONS){
 
     for(i = 0 ; i < NUM_BUTTONS ; i++){
-      if(myComb[i] != sequence[i])
+      if(myComb[i] != sequenza[i])
         lost = true;
     }
 
@@ -204,17 +204,9 @@ void game_state(){
 
 }
 
-void sequenceShuffle(){
-  int arr[NUM_BUTTONS]={1, 2, 3, 4};  
-  int temp, j;
-  for(int i = NUM_BUTTONS-1 ; i > 0 ; i--){
-    j= random(0,i+1);
-    temp= arr[i];
-    arr[i]=arr[j];
-    arr[j]= temp; 
-  }
-  for(int k=0; k< NUM_BUTTONS; k++){
-    sequence[k]=arr[k];
+void generaSequenza(){
+  for(int j = 0 ; j < 3 ; j++){
+    sequenza[j] = random(1,4); //Genera un numero casuale tra 1 e 4
   }
 }
 
