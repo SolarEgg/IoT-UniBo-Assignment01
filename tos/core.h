@@ -13,11 +13,16 @@
 void initCore(); //setup iniziali
 void intro(); //introduzione --> welcome to tos
 void deep_sleep();
+void displayDifficulty();
 void set_difficulty();
 void game_state();
 void stage1();
 void stage2();
 void finalize();
 void sequenceShuffle();
+void showSequence();
+void startNewRound();
+bool checkCombination();
+void playerInput();
 
 #endif

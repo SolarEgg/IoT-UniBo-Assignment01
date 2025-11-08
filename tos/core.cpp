@@ -7,12 +7,21 @@
 #include "LiquidCrystal_I2C.h"
 
 #define MAX_TIME_IN_INTRO_STATE 10000
-#define T1  10000
+#define T1  120000  //modifica temporanea per avere più tempo di verificare il funzionamento del gioco
 #include <time.h>
 
-double F; //Scale factor
+int ledPins[NUM_LED] ={LED01_PIN, LED02_PIN, LED03_PIN, LED04_PIN};
+float F= 0.15;
+int level =1;
 int sequence[NUM_BUTTONS];
-int i;
+int playerComb[NUM_BUTTONS];
+int playerIndex =0;
+int cont =0;
+unsigned long timeAvailable =T1;
+unsigned long roundStartTime=0;
+int score=0; 
+bool lost =false;
+
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4); 
 
@@ -92,42 +101,58 @@ void deep_sleep(){
   }
 }
 
-void set_difficulty(){
-
-  int analogValue = analogRead(POT_PIN);
-  static int level = 1;
-
+//showing the difficulty on the lcd
+void displayDifficulty(){
   lcd.setCursor(0, 0);
   lcd.print("Difficulty : ");
-  lcd.print(level);  // stampa il valore del livello come numero
-
-  //Forse meglio uno switch
-   //Scelta difficoltà --------------------
-  if(analogValue <= 255) { 
-    level = 1;
-    F = 0.25;
-  }
-  else if(analogValue <= 511){
-    level = 2;
-    F = 0.50;
-  }
-  else if(analogValue <= 767){
-    level = 3;
-    F = 0.75;
-  }
-  else{
-    level = 4;
-    F = 1.00;
-  }
-
+  lcd.print(level); 
   lcd.setCursor(0, 1);
-  lcd.print("Fattore : ");
-  lcd.print(F); 
+  lcd.print("Fattore: ");
+  lcd.print(F);
+}
 
-  /* change the state if button 0 is pressed */
+void set_difficulty(){
+
+  static int lastLevel =0; //last level on display
+
+   if (isJustEnteredInState()) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Set difficulty");
+    lcd.setCursor(0, 1);
+    lcd.print("Turn Pot & press B1");
+    delay(500); // tempo per lasciare B1
+    resetInput(); // cancella eventuali flag residui
+  }
+
+  int analogValue = analogRead(POT_PIN);
+  level = map(analogValue, 0, 1023, 1, 4);
+
+ switch(level){
+  case 1: F=0.25;
+    break;
+   case 2: F=0.50;
+    break;
+   case 3: F=0.75;
+    break;
+    case 4: F=1.00;
+    break;
+    default: F=0.25;
+    break;
+ }
+
+ //adjust the level if it has changed
+ if(level != lastLevel){
+  lcd.clear();
+  displayDifficulty();
+  lastLevel = level;
+ }
+
+
+  /* change the state if B1 is pressed */
   if (isButtonPressed(0)){
-    analogWrite(LEDS_PIN, 0); //Spengo il led rosso
     resetInput();
+    analogWrite(LEDS_PIN, 0); //Spengo il led rosso
     lcd.clear();
     lcd.setCursor(0, 0); 
     lcd.println("Go !");     
@@ -135,74 +160,62 @@ void set_difficulty(){
     lcd.clear();
     changeState(GAME_STATE);          
   }
-  
+  delay(200);
 }
 
 void game_state(){
 
-  static int myComb[NUM_BUTTONS];
-  static int cont;
-  static int timeAvailable;
-  static bool lost = NULL;
-  int timeElapsed = getCurrentTimeInState();
-  
   if (isJustEnteredInState()){
-    lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
-    sequenceShuffle();
-    lcd.print("Sequenza : ");    
-    for(i = 0 ; i < NUM_BUTTONS ; i++)
-      lcd.print(sequence[i]);
-
-    cont = 0; //internal counter of myComb array
-    timeAvailable = T1; //time available to
+    score=0;
+    timeAvailable = T1; 
+    startNewRound();
+    lcd.clear();
   }
   
-  //Se il tempo per indovinare è scaduto, oppure ho sbagliato la sequenza --> GAME OVER
-  if(timeElapsed >= timeAvailable){
+  unsigned long now = millis();
+  //if the time has finished
+  if(now >= roundStartTime >= timeAvailable){
+    lost=true;
     lcd.clear();
     lcd.print("TEMPO SCADUTO");
+    delay(2000);
+    changeState(FINAL_STATE);
+    return;
+  }
+
+  playerInput();
+
+  //if the player managed to complete the sequence: 
+  if(playerIndex >= NUM_BUTTONS){
+    if(checkCombination()){
+      //the sequence is correct
+      score++;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("GOOD!");
+    lcd.setCursor(0, 1);
+    lcd.print("Score: ");
+    lcd.print(score);
     delay(1000);
-    lcd.clear();
-  } else if(lost){
-    lcd.print("SEQUENZA SBAGLIATA");
-  }
-
-  //Se ho indovinato la sequenza per tempo, incremento lo score e diminuisco il tempo disponibile del un fattore F
-  if(lost != NULL && lost == false){
-    lcd.clear();
-    lcd.print("SEQUENZA CORRETTA");
-  }
-
-
-
-  for(i = 0 ; i < NUM_BUTTONS; i++){
-
-    if(isButtonPressed(i)){
-      Serial.print("Hai premuto il bottone "); //Debug
-      Serial.println(i);
-      digitalWrite(LED01_PIN, HIGH);
-      delay(200);
-      digitalWrite(LED01_PIN, LOW);
-      myComb[cont] = i + 1;
-      cont++;
-      resetInput();
     }
-
+    
+    timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
+    startNewRound();
+    return;
+  }else{
+    //the sequence was wrong
+    lost=true;
+    lcd.clear();
+    lcd.print("SEQUENZA SBAGLIATA!");
+    delay(2000);
+    changeState(FINAL_STATE);
+    return;
   }
 
-  if(cont == NUM_BUTTONS){
-
-    for(i = 0 ; i < NUM_BUTTONS ; i++){
-      if(myComb[i] != sequence[i])
-        lost = true;
-    }
-
-    lost = false;
-
+  }
+    
   }
 
-
-}
 
 void sequenceShuffle(){
   int arr[NUM_BUTTONS]={1, 2, 3, 4};  
@@ -218,9 +231,79 @@ void sequenceShuffle(){
   }
 }
 
-void finalize(){
-  if (isJustEnteredInState()){
-    Serial.println("Finalize...");
+void showSequence(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Sequenza: ");
+  lcd.setCursor(0,1);
+  for(int i=0; i<NUM_BUTTONS; i++){
+    lcd.print(sequence[i]);
+    lcd.print(" ");
   }
-  changeState(INTRO_STATE);
+
+  delay(3000);  //da valutare, è sufficiente per poter vedere la sequenza su lcd al momento.
+}
+
+void startNewRound(){
+  sequenceShuffle();
+  lcd.clear();
+  showSequence();
+
+//turn off all green led
+  for (int i=0; i<NUM_LED;i++){
+    digitalWrite(ledPins[i], LOW);
+  }
+ playerIndex =0;
+ cont= 0;
+ roundStartTime=millis();
+ lost=false;
+}
+
+bool checkCombination(){
+  for(int i=0; i< NUM_BUTTONS; i++){
+    if (playerComb[i] != sequence[i]){
+      return false;
+    }
+  }
+  return true;
+}
+void playerInput(){
+  for(int i=0; i< NUM_BUTTONS;i++){
+    if(isButtonPressed(i)){
+      if (playerIndex < NUM_BUTTONS){
+      playerComb[playerIndex] = i+1;
+      playerIndex++;
+      digitalWrite(ledPins[i], HIGH);
+      delay(200);
+      digitalWrite(ledPins[i], LOW);
+
+      resetInput();
+    }
+  }
+}
+}
+void finalize(){
+  static unsigned long startTime =0;
+  if (isJustEnteredInState()){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Game Over");
+    lcd.setCursor(0, 1);
+    lcd.print("Final Score: ");
+    lcd.print(score);
+    analogWrite(LEDS_PIN, 255);
+    startTime =millis();
+  
+  }
+//Red led on for two sec
+  if(millis() - startTime >2000){
+    analogWrite(LEDS_PIN, 0);
+  }
+
+  //after 10 sec go back to intro
+  if(millis() - startTime >= 10000){
+    lcd.clear();
+    changeState(INTRO_STATE);
+  }
+  
 }
