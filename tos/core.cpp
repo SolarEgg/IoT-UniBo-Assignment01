@@ -235,6 +235,8 @@ void startNewRound(){
   lcd.clear();
   showSequence();
 
+  resetInput();
+
 //turn off all green led
   for (int i=0; i<NUM_LED;i++){
     digitalWrite(ledPins[i], LOW);
