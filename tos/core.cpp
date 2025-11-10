@@ -10,9 +10,16 @@
 #define T1  10000
 #include <time.h>
 
-double F; //Scale factor
-int sequenza[NUM_BUTTONS];
-int i;
+int ledPins[NUM_LED] ={LED01_PIN, LED02_PIN, LED03_PIN};
+float F;
+int level;
+int sequence[NUM_BUTTONS];
+int playerComb[NUM_BUTTONS];
+int playerIndex = 0;
+unsigned long timeAvailable = T1;
+unsigned long roundStartTime = 0;
+int score = 0; 
+bool lost = false;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4); 
 
@@ -140,79 +147,145 @@ void set_difficulty(){
 
 void game_state(){
 
-  static int myComb[NUM_BUTTONS];
-  static int cont;
-  static int timeAvailable;
-  static bool lost = NULL;
-  int timeElapsed = getCurrentTimeInState();
-  
   if (isJustEnteredInState()){
-    lcd.setCursor(0, 0); // Set the cursor on the third column and first row.  
-    generaSequenza();
-    lcd.print("Sequenza : ");    
-    for(i = 0 ; i < NUM_BUTTONS ; i++)
-      lcd.print(sequenza[i]);
-
-    cont = 0; //internal counter of myComb array
-    timeAvailable = T1; //time available to
-  }
-  
-  //Se il tempo per indovinare è scaduto, oppure ho sbagliato la sequenza --> GAME OVER
-  if(timeElapsed >= timeAvailable){
-    lcd.clear();
-    lcd.print("TEMPO SCADUTO");
-    delay(1000);
-    lcd.clear();
-  } else if(lost){
-    lcd.print("SEQUENZA SBAGLIATA");
+    score=0;
+    timeAvailable = T1; 
+    startNewRound();
+    return;
   }
 
-  //Se ho indovinato la sequenza per tempo, incremento lo score e diminuisco il tempo disponibile del un fattore F
-  if(lost != NULL && lost == false){
-    lcd.clear();
-    lcd.print("SEQUENZA CORRETTA");
+  unsigned long elapsed = millis() - roundStartTime;
+  //if the time has finished
+  if(elapsed >= timeAvailable){
+    lost=true;
+    changeState(FINAL_STATE);
+    return;
   }
 
+  playerInput();
 
-
-  for(i = 0 ; i < NUM_BUTTONS; i++){
-
-    if(isButtonPressed(i)){
-      Serial.print("Hai premuto il bottone "); //Debug
-      Serial.println(i);
-      digitalWrite(LED01_PIN, HIGH);
-      delay(200);
-      digitalWrite(LED01_PIN, LOW);
-      myComb[cont] = i + 1;
-      cont++;
-      resetInput();
-    }
-
+  //if the player managed to complete the sequence: 
+  if(playerIndex >= NUM_BUTTONS){
+    if(checkCombination()){
+      //the sequence is correct
+      score++;
+      showGoodMessage();
+      delay(1500);
+      timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
+      startNewRound();
+  }else{
+    //the sequence was wrong
+    lost=true;
+    changeState(FINAL_STATE);
   }
-
-  if(cont == NUM_BUTTONS){
-
-    for(i = 0 ; i < NUM_BUTTONS ; i++){
-      if(myComb[i] != sequenza[i])
-        lost = true;
-    }
-
-    lost = false;
-
+    return;
   }
-
 
 }
 
-void generaSequenza(){
-  for(int j = 0 ; j < 3 ; j++){
-    sequenza[j] = random(1,4); //Genera un numero casuale tra 1 e 4
+
+void sequenceShuffle(){
+  int arr[NUM_BUTTONS]={1, 2, 3};  
+  int temp, j;
+  for(int i = NUM_BUTTONS-1 ; i > 0 ; i--){
+    j= random(0,i+1);
+    temp= arr[i];
+    arr[i]=arr[j];
+    arr[j]= temp; 
   }
+  for(int k=0; k< NUM_BUTTONS; k++){
+    sequence[k]=arr[k];
+  }
+}
+
+void showSequence(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Sequenza: ");
+  lcd.setCursor(0,1);
+  for(int i=0; i<NUM_BUTTONS; i++){
+    lcd.print(sequence[i]);
+    lcd.print(" ");
+  }
+
+  delay(3000);  //da valutare, è sufficiente per poter vedere la sequenza su lcd al momento.
+}
+
+void startNewRound(){
+  sequenceShuffle();
+  lcd.clear();
+  showSequence();
+
+
+  playerIndex =0;
+  resetInput();
+
+//turn off all green led
+  for (int i=0; i<NUM_LED;i++){
+    digitalWrite(ledPins[i], LOW);
+  }
+
+ roundStartTime=millis();
+ lost=false;
+}
+
+bool checkCombination(){
+  for(int i=0; i< NUM_BUTTONS; i++){
+    if (playerComb[i] != sequence[i]){
+      return false;
+    }
+  }
+  return true;
+}
+
+
+void playerInput(){
+  for(int i=0; i< NUM_BUTTONS;i++){
+    if(isButtonPressed(i)){
+      if (playerIndex < NUM_BUTTONS){
+      playerComb[playerIndex] = i+1;
+      playerIndex++;
+      digitalWrite(ledPins[i], HIGH);
+
+      resetInput();
+    }
+  }
+}
+}
+
+void showGoodMessage(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("GOOD!");
+   lcd.setCursor(0,1);
+  lcd.print("Score: ");
+  lcd.print(score);
 }
 
 void finalize(){
+
+  static unsigned long startTime =0;
+
   if (isJustEnteredInState()){
-    Serial.println("Finalize...");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Game Over");
+    lcd.setCursor(0, 1);
+    lcd.print("Final Score: ");
+    lcd.print(score);
+    analogWrite(LEDS_PIN, 255);
+    startTime = millis();
+
   }
-  changeState(INTRO_STATE);
+//Red led on for two sec
+  if(millis() - startTime > 2000){
+    analogWrite(LEDS_PIN, 0);
+  }
+
+  //after 10 sec go back to intro
+  if(millis() - startTime >= 10000){
+    lcd.clear();
+    changeState(INTRO_STATE);
+  }
+
 }

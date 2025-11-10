@@ -2,8 +2,8 @@
 #define __CONFIG__
 
 // #define __DEBUG__
-#define NUM_BUTTONS 4
-#define NUM_LED 4
+#define NUM_BUTTONS 3
+#define NUM_LED 3
 
 //Pulsanti
 #define BUT01_PIN 2

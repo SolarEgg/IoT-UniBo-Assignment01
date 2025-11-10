@@ -15,8 +15,11 @@ void intro(); //introduzione --> welcome to tos
 void deep_sleep();
 void set_difficulty();
 void game_state();
-void stage1();
-void stage2();
+void startNewRound();
+void playerInput();
+bool checkCombination();
+void showGoodMessage();
+void startNewRound();
 void finalize();
 void generaSequenza();
 
