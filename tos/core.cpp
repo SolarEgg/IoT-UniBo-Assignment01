@@ -4,7 +4,7 @@
 #include "kernel.h"
 #include "input.h"
 #include "config.h"
-#include "LiquidCrystal_I2C.h"
+#include "LiquidCrystal_I2C.h"  //  DEBUG
 
 #define MAX_TIME_IN_INTRO_STATE 10000
 #define T1  120000  //modifica temporanea per avere più tempo di verificare il funzionamento del gioco
@@ -16,14 +16,13 @@ int level =1;
 int sequence[NUM_BUTTONS];
 int playerComb[NUM_BUTTONS];
 int playerIndex =0;
-int cont =0;
 unsigned long timeAvailable =T1;
 unsigned long roundStartTime=0;
 int score=0; 
 bool lost =false;
 
 
-LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4); 
+LiquidCrystal_I2C lcd = LiquidCrystal_I2C(0x27,16,4);  //DEBUG
 
 //Setup
 void initCore(){
@@ -188,7 +187,6 @@ void game_state(){
       //the sequence is correct
       score++;
       showGoodMessage();
-    
       delay(1500);
       timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
       startNewRound();
@@ -235,14 +233,15 @@ void startNewRound(){
   lcd.clear();
   showSequence();
 
+  
+  playerIndex =0;
   resetInput();
 
 //turn off all green led
   for (int i=0; i<NUM_LED;i++){
     digitalWrite(ledPins[i], LOW);
   }
- playerIndex =0;
- cont= 0;
+ 
  roundStartTime=millis();
  lost=false;
 }
@@ -255,6 +254,8 @@ bool checkCombination(){
   }
   return true;
 }
+
+
 void playerInput(){
   for(int i=0; i< NUM_BUTTONS;i++){
     if(isButtonPressed(i)){
@@ -262,8 +263,6 @@ void playerInput(){
       playerComb[playerIndex] = i+1;
       playerIndex++;
       digitalWrite(ledPins[i], HIGH);
-      delay(200);
-      digitalWrite(ledPins[i], LOW);
 
       resetInput();
     }
