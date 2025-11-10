@@ -169,16 +169,13 @@ void game_state(){
     score=0;
     timeAvailable = T1; 
     startNewRound();
-    lcd.clear();
+    return;
   }
   
-  unsigned long now = millis();
+  unsigned long elapsed = millis() - roundStartTime;
   //if the time has finished
-  if(now >= roundStartTime >= timeAvailable){
+  if(elapsed >= timeAvailable){
     lost=true;
-    lcd.clear();
-    lcd.print("TEMPO SCADUTO");
-    delay(2000);
     changeState(FINAL_STATE);
     return;
   }
@@ -190,31 +187,20 @@ void game_state(){
     if(checkCombination()){
       //the sequence is correct
       score++;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("GOOD!");
-    lcd.setCursor(0, 1);
-    lcd.print("Score: ");
-    lcd.print(score);
-    delay(1000);
-    }
+      showGoodMessage();
     
-    timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
-    startNewRound();
-    return;
+      delay(1500);
+      timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
+      startNewRound();
   }else{
     //the sequence was wrong
     lost=true;
-    lcd.clear();
-    lcd.print("SEQUENZA SBAGLIATA!");
-    delay(2000);
     changeState(FINAL_STATE);
+  }
     return;
   }
-
-  }
     
-  }
+}
 
 
 void sequenceShuffle(){
@@ -282,6 +268,17 @@ void playerInput(){
   }
 }
 }
+
+void showGoodMessage(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("GOOD!");
+   lcd.setCursor(0,1);
+  lcd.print("Score: ");
+  lcd.print(score);
+}
+
+
 void finalize(){
   static unsigned long startTime =0;
   if (isJustEnteredInState()){
@@ -305,5 +302,7 @@ void finalize(){
     lcd.clear();
     changeState(INTRO_STATE);
   }
+
+  
   
 }

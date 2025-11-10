@@ -24,5 +24,6 @@ void showSequence();
 void startNewRound();
 bool checkCombination();
 void playerInput();
+void showGoodMessage();
 
 #endif
