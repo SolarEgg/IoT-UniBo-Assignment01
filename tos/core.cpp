@@ -158,6 +158,7 @@ void game_state(){
   //if the time has finished
   if(elapsed >= timeAvailable){
     lost=true;
+    Serial.println("Scaduto il tempo"); //Debug
     changeState(FINAL_STATE);
     return;
   }
@@ -165,12 +166,12 @@ void game_state(){
   playerInput();
 
   //if the player managed to complete the sequence: 
-  if(playerIndex >= NUM_BUTTONS){
+  if(playerIndex == NUM_BUTTONS){
     if(checkCombination()){
       //the sequence is correct
       score++;
       showGoodMessage();
-      delay(1500);
+      delay(500);
       timeAvailable= (unsigned long)( (float)timeAvailable *(1.0f-F)); //next level, less time
       startNewRound();
   }else{
@@ -212,22 +213,25 @@ void showSequence(){
 }
 
 void startNewRound(){
-  sequenceShuffle();
-  lcd.clear();
-  showSequence();
 
+  sequenceShuffle(); //Genera una sequenza
+  lcd.clear(); //Pulisci il display
+  showSequence(); // Mostra sequenza sullo schermo
 
-  playerIndex =0;
+  playerIndex = 0;
   resetInput();
 
-//turn off all green led
+  //turn off all green led
   for (int i=0; i<NUM_LED;i++){
     digitalWrite(ledPins[i], LOW);
   }
 
  roundStartTime=millis();
  lost=false;
+
 }
+
+
 
 bool checkCombination(){
   for(int i=0; i< NUM_BUTTONS; i++){
@@ -240,24 +244,28 @@ bool checkCombination(){
 
 
 void playerInput(){
-  for(int i=0; i< NUM_BUTTONS;i++){
+
+  for(int i=0; i< NUM_BUTTONS; i++){
+
     if(isButtonPressed(i)){
-      if (playerIndex < NUM_BUTTONS){
+      
+      resetInput();  // Reset flag subito    
+
       playerComb[playerIndex] = i+1;
+      Serial.print("Premuto pulsante :");
+      Serial.println(playerComb[playerIndex]);
       playerIndex++;
       digitalWrite(ledPins[i], HIGH);
-
-      resetInput();
+      
     }
   }
-}
 }
 
 void showGoodMessage(){
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("GOOD!");
-   lcd.setCursor(0,1);
+  lcd.setCursor(0,1);
   lcd.print("Score: ");
   lcd.print(score);
 }
@@ -277,7 +285,8 @@ void finalize(){
     startTime = millis();
 
   }
-//Red led on for two sec
+  
+  //Red led on for two sec
   if(millis() - startTime > 2000){
     analogWrite(LEDS_PIN, 0);
   }
@@ -285,6 +294,11 @@ void finalize(){
   //after 10 sec go back to intro
   if(millis() - startTime >= 10000){
     lcd.clear();
+    
+    //turn off all green led
+    for (int i=0; i<NUM_LED;i++)
+      digitalWrite(ledPins[i], LOW);
+
     changeState(INTRO_STATE);
   }
 
