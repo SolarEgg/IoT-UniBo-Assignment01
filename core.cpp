@@ -121,10 +121,11 @@ void intro() {
     changeState(DEEP_SLEEP_STATE);
   
   // Check if Button 1 is pressed
-  } else if (isButtonPressed(0)) { // Button 0 is B1
+  } else if (isButtonPressed(0)) {
+     // Button 0 is B1
     lcd.clear();
     resetInput(); // Clear the button press
-    changeState(SETTING_DIFFICULTY);
+    changeState(SETTING_DIFFICULTY); //SETTING_DIFFICULTY
   }
 }
 
@@ -148,17 +149,14 @@ void deep_sleep() {
   sleep_mode(); // Arduino stops here until an interrupt
 
   // --- Waking up ---
-  // Code execution resumes here after B1 is pressed
-  sleep_disable();
 
-  // Quick flash to show it woke up
-  digitalWrite(LED01_PIN, HIGH);
-  delay(100);
-  digitalWrite(LED01_PIN, LOW);
-
-  resetInput(); // Clear the wake-up button press
-  lcd.clear();
-  changeState(INTRO_STATE); // Go back to the intro
+  if (isButtonPressed(0)) {
+    sleep_disable();
+     // Button 0 is B1
+    lcd.clear();
+    resetInput(); // Clear the button press
+    changeState(INTRO_STATE); //SETTING_DIFFICULTY
+  }
 }
 
 // Helper function to show difficulty on LCD

@@ -29,7 +29,7 @@
 
 
 #define MAX_TIME_IN_INTRO_STATE 10000
-#define T1  120000 
+#define T1  120000
 
 
 #endif

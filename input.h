@@ -4,5 +4,6 @@
 void initInput();
 void resetInput();
 bool isButtonPressed(int buttonIndex);
+
  
 #endif
