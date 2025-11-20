@@ -1,56 +1,89 @@
+
 #include "input.h"
 #include "Arduino.h"
 #include "config.h"
+#include <EnableInterrupt.h> 
 
-#include <EnableInterrupt.h>
-
-#define BOUNCING_TIME 50
-
-// #define __DEBUG__
+/* --- Debounce Time ---
+   300ms = ignore all signals for 0.3s after the first one.*/
+#define BOUNCING_TIME 300
 
 uint8_t inputPins[NUM_BUTTONS] = {BUT01_PIN, BUT02_PIN, BUT03_PIN, BUT04_PIN};
+
+// `true` = pressed, `false` = not pressed.
 bool buttonPressed[NUM_BUTTONS] = {false, false, false, false};
 
-/* used for debouncing */
+// Stores the time (in ms) of the last valid press for debouncing.
 long lastButtonPressedTimestamps[NUM_BUTTONS];
 
+// --- Interrupt Handler Functions ---
+
+// Declare the main handler
 void buttonHandler(int i);
+
+// Wrapper functions for the interrupt.
+// These call the main handler with the correct button index (0-3).
 void buttonHandler0(){ buttonHandler(0); }
 void buttonHandler1(){ buttonHandler(1); }
 void buttonHandler2(){ buttonHandler(2); }
 void buttonHandler3(){ buttonHandler(3); }
 
-void (*buttonHandlers[NUM_BUTTONS])() = { buttonHandler0, buttonHandler1, buttonHandler2, buttonHandler3 };
+// Array of function pointers to store the handlers.
+// Used to attach interrupts in a loop.
+void (*buttonHandlers[NUM_BUTTONS])() = { 
+  buttonHandler0, 
+  buttonHandler1, 
+  buttonHandler2, 
+  buttonHandler3 
+};
 
-//Detect the pression and set the flag to true
-void buttonHandler(int i){
-  long ts = millis();
-  if (ts - lastButtonPressedTimestamps[i] > BOUNCING_TIME){
+/* Main Interrupt Service Routine
+ *
+ * It handles the button interrupt and debouncing.
+ * Obtains the current system time (ts).
+ * Checks if the time difference is greater than BOUNCING_TIME, the event is registered
+ * as a single, valid button press, filtering out noises (bounce).
+ * Updates the timestamp and sets the 'buttonPressed[i]' flag to true, notifying
+ * the main game logic to process the input.
+ */
+void buttonHandler(int i) {
+
+  long ts = millis(); 
+  
+  if (ts - lastButtonPressedTimestamps[i] > BOUNCING_TIME) {
     lastButtonPressedTimestamps[i] = ts;
-    int status = digitalRead(inputPins[i]);
-    if (status == HIGH && !buttonPressed[i]) { 
-        buttonPressed[i] = true;
-    }
+    buttonPressed[i] = true;             
   }
 }
 
-//Button setup
-void initInput(){
+// --- Setup Function ---
+
+// This function is called once in setup().
+void initInput() {
+  // Loop through all buttons
   for (int i = 0; i < NUM_BUTTONS; i++) {
-    pinMode(inputPins[i], INPUT); //setting INPUT mode
-    enableInterrupt(inputPins[i], buttonHandlers[i], CHANGE); //enables interrrupt
+    
+    // Set pin as an input and enable the internal pull-up resistor.
+    // This keeps the pin HIGH until the button (wired to GND) is pressed.
+    pinMode(inputPins[i], INPUT_PULLUP); 
+    
+    // Attach the interrupt.
+    // Calls the handler when the pin signal FALLS (HIGH to LOW) on press.
+    enableInterrupt(inputPins[i], buttonHandlers[i], FALLING); 
   }
 }
 
-void resetInput(){
-  long ts = millis();
+// --- Helper Functions (used by the main loop) ---
+
+// Resets all button flags to 'false'.
+// Called by the main loop after processing inputs.
+void resetInput() {
   for (int i = 0; i < NUM_BUTTONS; i++) {
     buttonPressed[i] = false;      
-    lastButtonPressedTimestamps[i] = ts;    
   }
 }
-bool isButtonPressed(int buttonIndex){
+
+// Checks if a specific button's flag is set to 'true'.
+bool isButtonPressed(int buttonIndex) {
   return buttonPressed[buttonIndex];
 }
-
-

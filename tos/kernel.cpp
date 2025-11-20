@@ -1,18 +1,15 @@
 #include "kernel.h"
 
-/* current state */
+//keep track of the game flow
+
 int currentState;
-
-/* time in which the game entered in current state */
 long enteredStateTime;
-
-/* how long it the game is in current state */
 long currentTimeInState;
+bool firstCheckInState; //flag is true if it's the first cycle
 
-/* flag which is true if it is the first cycle in that state */
-bool firstCheckInState; 
-
-/* state management procedures */
+void updateStateTime(){
+  currentTimeInState = millis() - enteredStateTime;
+}
 
 int getCurrentState(){
   return currentState;
@@ -36,11 +33,6 @@ void changeState(int new_state){
   currentState = new_state;
   enteredStateTime = millis();
   firstCheckInState = true;
-}
-
-//calculate the time occured while entering the state
-void updateStateTime(){
-  currentTimeInState = millis() - enteredStateTime;
 }
 
 void logMsg(const String& msg){
