@@ -15,3 +15,11 @@
 ## 3. File core.h e tos.ino 
 - core.h: Abbiamo aggiunto le definizioni per i nuovi stati (es. STATE_WAIT, STATE_START_ROUND, STATE_SHOW_SEQUENCE) e i prototipi per le nuove funzioni (es. wait(), state_wait()).
 - tos.ino: Abbiamo aggiornato lo switch nel loop()  per includere i nuovi stati che abbiamo aggiunto, permettendo alla macchina a stati di gestirli.
+
+---
+
+Directory \tos contains all the code for assignement01 for the course "Embedded Systems & Iot"
+- tos.ino : is the entry point of the application
+- core.cpp : contains the main game logic
+- input.cpp : handles button input using interrupts and debouncing
+- kernel.cpp : state management procedures
